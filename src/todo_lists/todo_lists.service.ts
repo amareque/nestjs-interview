@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TodoList } from './todo_list.entity';
 import { Todo } from '../todos/todo.entity';
+import { TodoList as TodoListInterface } from '../interfaces/todo_list.interface';
+import { Todo as TodoInterface } from '../interfaces/todo.interface';
 
 @Injectable()
 export class TodoListsService {
@@ -15,17 +17,22 @@ export class TodoListsService {
     private readonly todoRepository: Repository<Todo>,
   ) {}
 
-  async all(): Promise<TodoList[]> {
+  async all(): Promise<TodoListInterface[]> {
     const todoLists = await this.todoListRepository.find({
       relations: ['todos'],
     });
     return todoLists.map((todoList) => ({
-      ...todoList,
-      todos: todoList.todos || [],
+      id: todoList.id,
+      name: todoList.name,
+      todos: (todoList.todos || []).map((todo) => ({
+        id: todo.id,
+        title: todo.title,
+        completed: todo.completed,
+      } as TodoInterface)),
     }));
   }
 
-  async get(id: number): Promise<TodoList> {
+  async get(id: number): Promise<TodoListInterface> {
     const todoList = await this.todoListRepository.findOne({
       where: { id },
       relations: ['todos'],
@@ -36,25 +43,39 @@ export class TodoListsService {
     }
 
     return {
-      ...todoList,
-      todos: todoList.todos || [],
+      id: todoList.id,
+      name: todoList.name,
+      todos: (todoList.todos || []).map((todo) => ({
+        id: todo.id,
+        title: todo.title,
+        completed: todo.completed,
+      } as TodoInterface)),
     };
   }
 
-  async create(dto: CreateTodoListDto): Promise<TodoList> {
+  async create(dto: CreateTodoListDto): Promise<TodoListInterface> {
     const todoList = this.todoListRepository.create({ name: dto.name });
-    return await this.todoListRepository.save(todoList);
+    const savedTodoList = await this.todoListRepository.save(todoList);
+    return {
+      id: savedTodoList.id,
+      name: savedTodoList.name,
+      todos: [],
+    };
   }
 
-  async update(id: number, dto: UpdateTodoListDto): Promise<TodoList> {
-    return await this.todoListRepository.save({ id, ...dto } as TodoList);
+  async update(id: number, dto: UpdateTodoListDto): Promise<TodoListInterface> {
+    const updatedTodoList = await this.todoListRepository.save({
+      id,
+      ...dto,
+    } as TodoList);
+    return await this.get(updatedTodoList.id);
   }
 
   async delete(id: number): Promise<void> {
     await this.todoListRepository.delete(id);
   }
 
-  async completeAll(id: number): Promise<TodoList> {
+  async completeAll(id: number): Promise<TodoListInterface> {
     const todoList = await this.todoListRepository.findOneBy({ id });
 
     if (!todoList) {

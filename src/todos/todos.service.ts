@@ -33,7 +33,12 @@ export class TodosService {
       todoList: todoList,
     });
 
-    return await this.todoRepository.save(todo);
+    const savedTodo = await this.todoRepository.save(todo);
+    return {
+      id: savedTodo.id,
+      title: savedTodo.title,
+      completed: savedTodo.completed,
+    };
   }
 
   async update(id: number, dto: UpdateTodoDto): Promise<TodoInterface> {
@@ -43,7 +48,12 @@ export class TodosService {
       throw new NotFoundException(`Todo with id ${id} not found`);
     }
 
-    return await this.todoRepository.save({ id, ...dto } as Todo);
+    const updatedTodo = await this.todoRepository.save({ id, ...dto } as Todo);
+    return {
+      id: updatedTodo.id,
+      title: updatedTodo.title,
+      completed: updatedTodo.completed,
+    };
   }
 
   async delete(id: number): Promise<void> {
