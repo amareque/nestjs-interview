@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Patch,
 } from '@nestjs/common';
 import { CreateTodoListDto } from './dtos/create-todo_list';
 import { UpdateTodoListDto } from './dtos/update-todo_list';
@@ -42,5 +43,10 @@ export class TodoListsController {
   @Delete('/:todoListId')
   delete(@Param() param: { todoListId: number }): Promise<void> {
     return this.todoListsService.delete(param.todoListId);
+  }
+
+  @Patch('/:todoListId/complete-all')
+  completeAll(@Param() param: { todoListId: number }): Promise<TodoList> {
+    return this.todoListsService.completeAll(param.todoListId);
   }
 }
