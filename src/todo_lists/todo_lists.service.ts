@@ -24,11 +24,14 @@ export class TodoListsService {
     return todoLists.map((todoList) => ({
       id: todoList.id,
       name: todoList.name,
-      todos: (todoList.todos || []).map((todo) => ({
-        id: todo.id,
-        title: todo.title,
-        completed: todo.completed,
-      } as TodoInterface)),
+      todos: (todoList.todos || []).map(
+        (todo) =>
+          ({
+            id: todo.id,
+            title: todo.title,
+            completed: todo.completed,
+          }) as TodoInterface,
+      ),
     }));
   }
 
@@ -45,11 +48,14 @@ export class TodoListsService {
     return {
       id: todoList.id,
       name: todoList.name,
-      todos: (todoList.todos || []).map((todo) => ({
-        id: todo.id,
-        title: todo.title,
-        completed: todo.completed,
-      } as TodoInterface)),
+      todos: (todoList.todos || []).map(
+        (todo) =>
+          ({
+            id: todo.id,
+            title: todo.title,
+            completed: todo.completed,
+          }) as TodoInterface,
+      ),
     };
   }
 
