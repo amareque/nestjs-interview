@@ -7,6 +7,10 @@ import { TodoList } from './todo_list.entity';
 import { Todo } from '../todos/todo.entity';
 import { TodoList as TodoListInterface } from '../interfaces/todo_list.interface';
 import { Todo as TodoInterface } from '../interfaces/todo.interface';
+import { ClientProxy } from '@nestjs/microservices';
+import { Inject } from '@nestjs/common';
+import { DeletionJobsService } from '../deletion_jobs/deletion_jobs.service';
+import { DeletionJob } from '../interfaces/deletion_job.interface';
 
 @Injectable()
 export class TodoListsService {
@@ -15,6 +19,8 @@ export class TodoListsService {
     private readonly todoListRepository: Repository<TodoList>,
     @InjectRepository(Todo)
     private readonly todoRepository: Repository<Todo>,
+    @Inject('DELETION_QUEUE') private readonly deletionQueue: ClientProxy,
+    private readonly deletionJobsService: DeletionJobsService,
   ) {}
 
   async all(): Promise<TodoListInterface[]> {
@@ -77,22 +83,20 @@ export class TodoListsService {
     return await this.get(updatedTodoList.id);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number): Promise<DeletionJob> {
     const todoList = await this.todoListRepository.findOneBy({ id });
 
     if (!todoList) {
       throw new NotFoundException(`TodoList with id ${id} not found`);
     }
 
-    // Delete all related todos first
-    await this.todoRepository
-      .createQueryBuilder()
-      .delete()
-      .where('todo_list_id = :id', { id })
-      .execute();
+    // Create a deletion job
+    const job = await this.deletionJobsService.create(id);
 
-    // Then delete the todo list
-    await this.todoListRepository.delete(id);
+    // Send a job to RabbitMQ queue
+    this.deletionQueue.emit('deletion-job', { jobId: job.id });
+
+    return job;
   }
 
   async completeAll(id: number): Promise<TodoListInterface> {
